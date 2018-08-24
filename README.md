@@ -9,8 +9,8 @@ VOOM!
 > I never shall know
 > Buy, boy! Let me tell you
 > It does clean up snow!
-
-- _The Cat in the Hat Comes Back_, by Dr. Seuss
+>
+> -- _The Cat in the Hat Comes Back_, by Dr. Seuss
 
 VOOM is some VMWare / vCenter lab management software I wrote to
 help me keep track of legitimate uses of a shared, communal lab
