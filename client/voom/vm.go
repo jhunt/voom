@@ -1,4 +1,4 @@
-package client
+package voom
 
 type VM struct {
 	ID             string            `json:"id"`
