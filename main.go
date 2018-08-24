@@ -69,7 +69,7 @@ func main() {
 			os.Exit(0)
 		}
 
-		if command == "summary" {
+		if command == "sum" {
 			fmt.Printf("USAGE: @G{voom} [options] @C{summary}\n")
 			fmt.Printf("\n")
 			fmt.Printf("Summarize resource usage, by BOSH director and deployment.\n")
@@ -124,74 +124,52 @@ func main() {
 		vms, err := c.VMs()
 		bail("Failed to retrieve list of VMs", err)
 
-		director := make(map[string]voom.VM)
-		deployment := make(map[string]voom.VM)
-
-		merge := func(dst voom.VM, src voom.VM) voom.VM {
-			dst.MemoryUsed += src.MemoryUsed
-			dst.MemoryReserved += src.MemoryReserved
-			dst.CPUUsage += src.CPUUsage
-			dst.CPUDemand += src.CPUDemand
-			dst.MemoryUsage += src.MemoryUsage
-			dst.CPUs += src.CPUs
-			return dst
-		}
-
+		sum := NewSummary()
 		for _, vm := range vms {
 			if !vm.On {
 				continue
 			}
 
 			dir := vm.Tags["director"]
+			dep := vm.Tags["deployment"]
 			if dir == "bosh-init" {
-				dir = vm.Tags["deployment"] /* tricky ... */
+				dir = dep /* tricky ... */
 			}
-			dep := dir+"/"+vm.Tags["deployment"]
 
 			if dir == "" {
 				fmt.Fprintf(os.Stderr, "vm %s has no director!\n", vm.ID)
 				continue
 			}
 
-			if _, ok := director[dir]; ok {
-				director[dir] = merge(director[dir], vm)
-			} else {
-				director[dir] = vm
+			sum.Breakout(dir).Breakout(dep).Ingest(vm)
+		}
+
+		t := table.NewTable("", "cores", "  compute  ", "  memory  ", "   disk   ")
+		t.Row(nil, "ALL",
+			fmt.Sprintf("% 5d", sum.Cores),
+			fmt.Sprintf("% 7.1f GHz", float64(sum.Compute) / 1024.0),
+			fmt.Sprintf("% 7.1f GB", float64(sum.Memory) / 1024.0),
+			fmt.Sprintf("% 7.1f GB", float64(sum.Disk) / 1024.0))
+		t.Row(nil, "---")
+
+		for _, name := range sum.Keys() {
+			bosh := sum.Breakout(name)
+			t.Row(nil, name,
+				fmt.Sprintf("% 5d", bosh.Cores),
+				fmt.Sprintf("% 7.1f GHz", float64(bosh.Compute) / 1024.0),
+				fmt.Sprintf("% 7.1f GB", float64(bosh.Memory) / 1024.0),
+				fmt.Sprintf("% 7.1f GB", float64(bosh.Disk) / 1024.0))
+
+			for _, name := range bosh.Keys() {
+				deployment := bosh.Breakout(name)
+				t.Row(nil, "   "+name,
+					fmt.Sprintf("% 5d", deployment.Cores),
+					fmt.Sprintf("% 7.1f    ", float64(deployment.Compute) / 1024.0),
+					fmt.Sprintf("% 7.1f   ", float64(deployment.Memory) / 1024.0),
+					fmt.Sprintf("% 7.1f   ", float64(deployment.Disk) / 1024.0))
 			}
-
-			if _, ok := director[dep]; ok {
-				deployment[dep] = merge(deployment[dep], vm)
-			} else {
-				deployment[dep] = vm
-			}
+			t.Row(nil, "---")
 		}
-
-		keys := make([]string, 0)
-		for k := range director {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for _, dir := range keys {
-			vm := director[dir]
-			fmt.Printf("BOSH Director :: @G{%s}\n", dir)
-			fmt.Printf("  Memory: %dMB (%dMB resv / %dMB alloc)\n", vm.MemoryUsage, vm.MemoryUsed, vm.MemoryReserved)
-			fmt.Printf("  CPU:    %d cores (%dMHz used / %dMHZ demand)\n", vm.CPUs, vm.CPUUsage, vm.CPUDemand)
-			fmt.Printf("\n")
-		}
-		fmt.Printf("\n")
-
-		keys = make([]string, 0)
-		for k := range deployment {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for _, dep := range keys {
-			vm := deployment[dep]
-			fmt.Printf("BOSH Deployment :: @Y{%s}\n", dep)
-			fmt.Printf("  Memory: %dMB (%dMB resv / %dMB alloc)\n", vm.MemoryUsage, vm.MemoryUsed, vm.MemoryReserved)
-			fmt.Printf("  CPU:    %d cores (%dMHz used / %dMHZ demand)\n", vm.CPUs, vm.CPUUsage, vm.CPUDemand)
-			fmt.Printf("\n")
-		}
-		fmt.Printf("\n")
+		t.Output(os.Stdout)
 	}
 }
