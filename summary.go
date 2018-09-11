@@ -7,28 +7,34 @@ import (
 )
 
 type Summary struct {
-	VMs int
-	Cores int
-	Memory int
-	Compute int
-	Disk int
+	VMs             int
+	Cores           int
+	MemoryAllocated int
+	MemoryUsed      int
+	Compute         int
+	DiskAllocated   int
+	DiskUsed        int
+	DiskFree        int
 
 	Parent *Summary
-	Sub map[string] *Summary
+	Sub    map[string]*Summary
 }
 
 func NewSummary() *Summary {
 	return &Summary{
-		Sub: make(map[string] *Summary),
+		Sub: make(map[string]*Summary),
 	}
 }
 
 func (s *Summary) Ingest(vm voom.VM) {
 	s.VMs = s.VMs + 1
 	s.Cores = s.Cores + int(vm.CPUs)
-	s.Memory = s.Memory + int(vm.MemoryUsed)
+	s.MemoryAllocated = s.MemoryAllocated + int(vm.MemoryAllocated)
+	s.MemoryUsed = s.MemoryUsed + int(vm.MemoryUsed)
 	s.Compute = s.Compute + int(vm.CPUUsage)
-	s.Disk = s.Disk + 0 /* FIXME */
+	s.DiskAllocated = s.DiskAllocated + int(vm.DiskAllocated)
+	s.DiskFree = s.DiskFree + int(vm.DiskFree)
+	s.DiskUsed = s.DiskUsed + int(vm.DiskUsed)
 
 	if s.Parent != nil {
 		s.Parent.Ingest(vm)

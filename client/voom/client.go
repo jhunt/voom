@@ -2,8 +2,8 @@ package voom
 
 import (
 	"context"
-	"strings"
 	"net/url"
+	"strings"
 
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/view"
@@ -65,17 +65,20 @@ func (c *Client) VMs() ([]VM, error) {
 			continue
 		}
 		v := VM{
-			ID:             vm.Summary.Config.Name,
-			Uptime: vm.Summary.QuickStats.UptimeSeconds,
-			Type:           vm.Summary.Config.GuestFullName,
-			IP:             vm.Summary.Guest.IpAddress,
-			On:             vm.Summary.Runtime.PowerState == types.VirtualMachinePowerStatePoweredOn,
-			MemoryUsed:     vm.Summary.Config.MemorySizeMB,
-			MemoryReserved: vm.Summary.Config.MemoryReservation,
-			CPUUsage:       vm.Summary.QuickStats.OverallCpuUsage,
-			CPUDemand:      vm.Summary.QuickStats.OverallCpuDemand,
-			MemoryUsage:    vm.Summary.QuickStats.GuestMemoryUsage,
-			CPUs:           vm.Summary.Config.NumCpu,
+			ID:              vm.Summary.Config.Name,
+			Uptime:          vm.Summary.QuickStats.UptimeSeconds,
+			Type:            vm.Summary.Config.GuestFullName,
+			IP:              vm.Summary.Guest.IpAddress,
+			On:              vm.Summary.Runtime.PowerState == types.VirtualMachinePowerStatePoweredOn,
+			MemoryAllocated: vm.Summary.Config.MemorySizeMB,
+			MemoryReserved:  vm.Summary.Config.MemoryReservation,
+			CPUUsage:        vm.Summary.QuickStats.OverallCpuUsage,
+			CPUDemand:       vm.Summary.QuickStats.OverallCpuDemand,
+			MemoryUsed:      vm.Summary.QuickStats.GuestMemoryUsage,
+			CPUs:            vm.Summary.Config.NumCpu,
+			DiskAllocated:   vm.Summary.Storage.Committed + vm.Summary.Storage.Uncommitted,
+			DiskUsed:        vm.Summary.Storage.Committed,
+			DiskFree:        vm.Summary.Storage.Uncommitted,
 
 			Tags: make(map[string]string),
 		}
