@@ -26,4 +26,5 @@ func printGlobalCommandsHelp() {
 	fmt.Printf("\n")
 	fmt.Printf("  ls             List VMs.\n")
 	fmt.Printf("  dump           Dump the list of VMs, in JSON.\n")
+	fmt.Printf("  sum            List a resource summary by bosh-director.\n")
 }
