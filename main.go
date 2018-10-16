@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"os"
-	"strings"
 	"sort"
+	"strings"
 
 	fmt "github.com/jhunt/go-ansi"
 	"github.com/jhunt/go-cli"
@@ -21,9 +21,9 @@ var opt struct {
 	Username string `cli:"-U, --username" env:"VOOM_USERNAME"`
 	Password string `cli:"-P, --password" env:"VOOM_PASSWORD"`
 
-	Dump struct{} `cli:"dump"`
-	List struct{} `cli:"ls"`
-	Summary struct {} `cli:"sum, summary"`
+	Dump    struct{} `cli:"dump"`
+	List    struct{} `cli:"ls"`
+	Summary struct{} `cli:"sum, summary"`
 }
 
 func bail(msg string, err error) {
@@ -100,8 +100,9 @@ func main() {
 			}
 			sort.Strings(tags)
 			t.Row(vm, vm.ID+"\n"+strings.Join(tags, "")+"\n", pow, vm.IP, timeString(vm.Uptime),
-				fmt.Sprintf("%d cores\n%dMHz used\n%dMHz demand", vm.CPUs, vm.CPUUsage, vm.CPUDemand),
-				fmt.Sprintf("%d MB\n%d MB resv\n%d MB alloc", vm.MemoryUsage, vm.MemoryReserved, vm.MemoryUsed))
+				fmt.Sprintf("CPU\n%d cores\n%dMHz used\n%dMHz demand", vm.CPUs, vm.CPUUsage, vm.CPUDemand),
+				fmt.Sprintf("RAM\n%d MB\n%d MB resv\n%d MB alloc", vm.MemoryUsed, vm.MemoryReserved, vm.MemoryAllocated),
+				fmt.Sprintf("   DISK\n%7.1f GB\n%7.1f GB free\n%7.1f GB alloc", float64(vm.DiskUsed)/1073741824.0, float64(vm.DiskFree)/1073741824.0, float64(vm.DiskAllocated)/1073741824.0))
 		}
 		t.Output(os.Stdout)
 		os.Exit(0)
@@ -144,29 +145,38 @@ func main() {
 			sum.Breakout(dir).Breakout(dep).Ingest(vm)
 		}
 
-		t := table.NewTable("", "cores", "  compute  ", "  memory  ", "   disk   ")
+		t := table.NewTable("", "cores", "  compute  ", "  memory allocated  ", "  memory used  ", "   disk allocated  ", "   disk used  ", "   disk free  ")
 		t.Row(nil, "ALL",
 			fmt.Sprintf("% 5d", sum.Cores),
-			fmt.Sprintf("% 7.1f GHz", float64(sum.Compute) / 1024.0),
-			fmt.Sprintf("% 7.1f GB", float64(sum.Memory) / 1024.0),
-			fmt.Sprintf("% 7.1f GB", float64(sum.Disk) / 1024.0))
+			fmt.Sprintf("% 7.1f GHz", float64(sum.Compute)/1024.0),
+			fmt.Sprintf("% 7.1f GB", float64(sum.MemoryAllocated)/1024.0),
+			fmt.Sprintf("% 7.1f GB", float64(sum.MemoryUsed)/1024.0),
+			fmt.Sprintf("% 7.1f GB", float64(sum.DiskAllocated)/1073741824.0),
+			fmt.Sprintf("% 7.1f GB", float64(sum.DiskUsed)/1073741824.0),
+			fmt.Sprintf("% 7.1f GB", float64(sum.DiskFree)/1073741824.0))
 		t.Row(nil, "---")
 
 		for _, name := range sum.Keys() {
 			bosh := sum.Breakout(name)
 			t.Row(nil, name,
 				fmt.Sprintf("% 5d", bosh.Cores),
-				fmt.Sprintf("% 7.1f GHz", float64(bosh.Compute) / 1024.0),
-				fmt.Sprintf("% 7.1f GB", float64(bosh.Memory) / 1024.0),
-				fmt.Sprintf("% 7.1f GB", float64(bosh.Disk) / 1024.0))
+				fmt.Sprintf("% 7.1f GHz", float64(bosh.Compute)/1024.0),
+				fmt.Sprintf("% 7.1f GB", float64(bosh.MemoryAllocated)/1024.0),
+				fmt.Sprintf("% 7.1f GB", float64(bosh.MemoryUsed)/1024.0),
+				fmt.Sprintf("% 7.1f GB", float64(bosh.DiskAllocated)/1073741824.0),
+				fmt.Sprintf("% 7.1f GB", float64(bosh.DiskUsed)/1073741824.0),
+				fmt.Sprintf("% 7.1f GB", float64(bosh.DiskFree)/1073741824.0))
 
 			for _, name := range bosh.Keys() {
 				deployment := bosh.Breakout(name)
 				t.Row(nil, "   "+name,
 					fmt.Sprintf("% 5d", deployment.Cores),
-					fmt.Sprintf("% 7.1f    ", float64(deployment.Compute) / 1024.0),
-					fmt.Sprintf("% 7.1f   ", float64(deployment.Memory) / 1024.0),
-					fmt.Sprintf("% 7.1f   ", float64(deployment.Disk) / 1024.0))
+					fmt.Sprintf("% 7.1f    ", float64(deployment.Compute)/1024.0),
+					fmt.Sprintf("% 7.1f   ", float64(deployment.MemoryAllocated)/1024.0),
+					fmt.Sprintf("% 7.1f   ", float64(deployment.MemoryUsed)/1024.0),
+					fmt.Sprintf("% 7.1f   ", float64(deployment.DiskAllocated)/1073741824.0),
+					fmt.Sprintf("% 7.1f   ", float64(deployment.DiskUsed)/1073741824.0),
+					fmt.Sprintf("% 7.1f   ", float64(deployment.DiskFree)/1073741824.0))
 			}
 			t.Row(nil, "---")
 		}
