@@ -76,11 +76,13 @@ func (c *Client) VMs() ([]VM, error) {
 			CPUDemand:       vm.Summary.QuickStats.OverallCpuDemand,
 			MemoryUsed:      vm.Summary.QuickStats.GuestMemoryUsage,
 			CPUs:            vm.Summary.Config.NumCpu,
-			DiskAllocated:   vm.Summary.Storage.Committed + vm.Summary.Storage.Uncommitted,
-			DiskUsed:        vm.Summary.Storage.Committed,
-			DiskFree:        vm.Summary.Storage.Uncommitted,
 
 			Tags: make(map[string]string),
+		}
+		if vm.Summary.Storage != nil {
+			v.DiskAllocated = vm.Summary.Storage.Committed + vm.Summary.Storage.Uncommitted
+			v.DiskUsed = vm.Summary.Storage.Committed
+			v.DiskFree = vm.Summary.Storage.Uncommitted
 		}
 
 		for _, cv := range vm.CustomValue {
