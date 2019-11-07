@@ -23,7 +23,9 @@ var opt struct {
 
 	Dump    struct{} `cli:"dump"`
 	List    struct{} `cli:"ls"`
-	Summary struct{} `cli:"sum, summary"`
+	Summary struct{
+		Percentage bool `cli:"-p, --percentage"`
+	} `cli:"sum, summary"`
 }
 
 func bail(msg string, err error) {
@@ -158,14 +160,25 @@ func main() {
 
 		for _, name := range sum.Keys() {
 			bosh := sum.Breakout(name)
-			t.Row(nil, name,
-				fmt.Sprintf("% 5d", bosh.Cores),
-				fmt.Sprintf("% 7.1f GHz", float64(bosh.Compute)/1024.0),
-				fmt.Sprintf("% 7.1f GB", float64(bosh.MemoryAllocated)/1024.0),
-				fmt.Sprintf("% 7.1f GB", float64(bosh.MemoryUsed)/1024.0),
-				fmt.Sprintf("% 7.1f GB", float64(bosh.DiskAllocated)/1073741824.0),
-				fmt.Sprintf("% 7.1f GB", float64(bosh.DiskUsed)/1073741824.0),
-				fmt.Sprintf("% 7.1f GB", float64(bosh.DiskFree)/1073741824.0))
+			if opt.Summary.Percentage {
+				t.Row(nil, name,
+					fmt.Sprintf("% 5d", bosh.Cores),
+					fmt.Sprintf("% 7.1f GHz (%.1f%%)", float64(bosh.Compute)/1024.0, float64(bosh.Compute)/float64(sum.Compute)*100.0),
+					fmt.Sprintf("% 7.1f GB  (%.1f%%)", float64(bosh.MemoryAllocated)/1024.0, float64(bosh.MemoryAllocated)/float64(sum.MemoryAllocated)*100.0),
+					fmt.Sprintf("% 7.1f GB  (%.1f%%)", float64(bosh.MemoryUsed)/1024.0, float64(bosh.MemoryUsed)/float64(sum.MemoryUsed)*100.0),
+					fmt.Sprintf("% 7.1f GB  (%.1f%%)", float64(bosh.DiskAllocated)/1073741824.0, float64(bosh.DiskAllocated)/float64(sum.DiskAllocated)*100.0),
+					fmt.Sprintf("% 7.1f GB  (%.1f%%)", float64(bosh.DiskUsed)/1073741824.0, float64(bosh.DiskUsed)/float64(sum.DiskUsed)*100.0),
+					fmt.Sprintf("% 7.1f GB  (%.1f%%)", float64(bosh.DiskFree)/1073741824.0, float64(bosh.DiskFree)/float64(sum.DiskFree)*100.0))
+			} else {
+				t.Row(nil, name,
+					fmt.Sprintf("% 5d", bosh.Cores),
+					fmt.Sprintf("% 7.1f GHz", float64(bosh.Compute)/1024.0),
+					fmt.Sprintf("% 7.1f GB", float64(bosh.MemoryAllocated)/1024.0),
+					fmt.Sprintf("% 7.1f GB", float64(bosh.MemoryUsed)/1024.0),
+					fmt.Sprintf("% 7.1f GB", float64(bosh.DiskAllocated)/1073741824.0),
+					fmt.Sprintf("% 7.1f GB", float64(bosh.DiskUsed)/1073741824.0),
+					fmt.Sprintf("% 7.1f GB", float64(bosh.DiskFree)/1073741824.0))
+			}
 
 			for _, name := range bosh.Keys() {
 				deployment := bosh.Breakout(name)
