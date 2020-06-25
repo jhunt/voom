@@ -140,8 +140,13 @@ func main() {
 			}
 
 			if dir == "" {
-				fmt.Fprintf(os.Stderr, "vm %s has no director!\n", vm.ID)
-				continue
+				dir = vm.Tags["voom"]
+				dep = vm.ID
+
+				if dir == "" {
+					dir = ":unknown:"
+					fmt.Fprintf(os.Stderr, "vm %s has no director!\n", vm.ID)
+				}
 			}
 
 			sum.Breakout(dir).Breakout(dep).Ingest(vm)
