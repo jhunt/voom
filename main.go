@@ -23,7 +23,7 @@ var opt struct {
 
 	Dump    struct{} `cli:"dump"`
 	List    struct{} `cli:"ls"`
-	Summary struct{
+	Summary struct {
 		Percentage bool `cli:"-p, --percentage"`
 	} `cli:"sum, summary"`
 }
